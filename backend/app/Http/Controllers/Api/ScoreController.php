@@ -21,16 +21,28 @@ class ScoreController extends Controller
 
         $totalUsers = User::where('status', 1)->count();
         $totalExams = ExamPaper::where('status', 1)->count();
-        $totalRecords = ExamRecord::where('status', 'graded')->count();
 
-        $avgScore = ExamRecord::where('status', 'graded')
-            ->avg('score') ?? 0;
+        $validRecords = ExamRecord::where('status', 'graded')
+            ->where(function ($q) {
+                $q->where('has_anomaly', false)
+                    ->orWhere('anomaly_status', ExamRecord::ANOMALY_OVERRIDDEN);
+            });
 
-        $passCount = ExamRecord::where('status', 'graded')
-            ->where('score', '>=', 60)
-            ->count();
-        $totalCount = ExamRecord::where('status', 'graded')->count();
+        $totalRecords = $validRecords->count();
+
+        $avgScore = (clone $validRecords)->avg('score') ?? 0;
+
+        $passCount = (clone $validRecords)->where('score', '>=', 60)->count();
+        $totalCount = $validRecords->count();
         $passRate = $totalCount > 0 ? ($passCount / $totalCount) * 100 : 0;
+
+        $anomalyCount = ExamRecord::where('status', 'graded')
+            ->where('has_anomaly', true)
+            ->count();
+
+        $overriddenCount = ExamRecord::where('status', 'graded')
+            ->where('anomaly_status', ExamRecord::ANOMALY_OVERRIDDEN)
+            ->count();
 
         $recentRecords = ExamRecord::with(['user', 'examPaper'])
             ->where('status', 'graded')
@@ -45,6 +57,8 @@ class ScoreController extends Controller
                 'total_records' => $totalRecords,
                 'avg_score' => round($avgScore, 2),
                 'pass_rate' => round($passRate, 2),
+                'anomaly_count' => $anomalyCount,
+                'overridden_count' => $overriddenCount,
             ],
             'recent_records' => $recentRecords,
         ]);
@@ -55,6 +69,10 @@ class ScoreController extends Controller
         $ranking = ExamRecord::with('user')
             ->where('exam_paper_id', $examPaper->id)
             ->where('status', 'graded')
+            ->where(function ($q) {
+                $q->where('has_anomaly', false)
+                    ->orWhere('anomaly_status', ExamRecord::ANOMALY_OVERRIDDEN);
+            })
             ->orderBy('score', 'desc')
             ->limit($request->input('limit', 50))
             ->get()
@@ -88,9 +106,14 @@ class ScoreController extends Controller
             return response()->json(['message' => '无权访问'], 403);
         }
 
-        $totalAttempts = ExamRecord::where('exam_paper_id', $examPaper->id)
+        $validQuery = ExamRecord::where('exam_paper_id', $examPaper->id)
             ->where('status', 'graded')
-            ->count();
+            ->where(function ($q) {
+                $q->where('has_anomaly', false)
+                    ->orWhere('anomaly_status', ExamRecord::ANOMALY_OVERRIDDEN);
+            });
+
+        $totalAttempts = (clone $validQuery)->count();
 
         if ($totalAttempts === 0) {
             return response()->json([
@@ -99,17 +122,9 @@ class ScoreController extends Controller
             ]);
         }
 
-        $avgScore = ExamRecord::where('exam_paper_id', $examPaper->id)
-            ->where('status', 'graded')
-            ->avg('score');
-
-        $highScore = ExamRecord::where('exam_paper_id', $examPaper->id)
-            ->where('status', 'graded')
-            ->max('score');
-
-        $lowScore = ExamRecord::where('exam_paper_id', $examPaper->id)
-            ->where('status', 'graded')
-            ->min('score');
+        $avgScore = (clone $validQuery)->avg('score');
+        $highScore = (clone $validQuery)->max('score');
+        $lowScore = (clone $validQuery)->min('score');
 
         $scoreDistribution = [];
         $ranges = [
@@ -121,10 +136,7 @@ class ScoreController extends Controller
         ];
 
         foreach ($ranges as $range => [$min, $max]) {
-            $count = ExamRecord::where('exam_paper_id', $examPaper->id)
-                ->where('status', 'graded')
-                ->whereBetween('score', [$min, $max])
-                ->count();
+            $count = (clone $validQuery)->whereBetween('score', [$min, $max])->count();
             $scoreDistribution[$range] = $count;
         }
 

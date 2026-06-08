@@ -39,6 +39,18 @@ const routes = [
     meta: { requiresAuth: true }
   },
   {
+    path: '/proctor/replay/:recordId',
+    name: 'ProctorReplay',
+    component: () => import('../views/proctor/Replay.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/appeals',
+    name: 'Appeals',
+    component: () => import('../views/appeals/Index.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
     path: '/questions',
     name: 'Questions',
     component: () => import('../views/questions/Index.vue'),

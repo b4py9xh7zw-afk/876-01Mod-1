@@ -16,6 +16,8 @@ class ExamRecord extends Model
         'end_time',
         'score',
         'status',
+        'has_anomaly',
+        'anomaly_status',
     ];
 
     protected $casts = [
@@ -25,6 +27,7 @@ class ExamRecord extends Model
         'end_time' => 'datetime',
         'score' => 'decimal:2',
         'status' => 'string',
+        'has_anomaly' => 'boolean',
     ];
 
     public const STATUS_IN_PROGRESS = 'in_progress';
@@ -35,6 +38,16 @@ class ExamRecord extends Model
         self::STATUS_IN_PROGRESS => '进行中',
         self::STATUS_SUBMITTED => '已提交',
         self::STATUS_GRADED => '已评分',
+    ];
+
+    public const ANOMALY_NONE = 'none';
+    public const ANOMALY_FLAGGED = 'flagged';
+    public const ANOMALY_OVERRIDDEN = 'overridden';
+
+    public const ANOMALY_STATUSES = [
+        self::ANOMALY_NONE => '无异常',
+        self::ANOMALY_FLAGGED => '有异常',
+        self::ANOMALY_OVERRIDDEN => '已改判',
     ];
 
     public function user()
@@ -50,5 +63,15 @@ class ExamRecord extends Model
     public function answers()
     {
         return $this->hasMany(ExamRecordAnswer::class, 'exam_record_id');
+    }
+
+    public function proctorEvents()
+    {
+        return $this->hasMany(ProctorEvent::class, 'exam_record_id');
+    }
+
+    public function appeals()
+    {
+        return $this->hasMany(AppealRecord::class, 'exam_record_id');
     }
 }

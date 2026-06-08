@@ -77,6 +77,11 @@ const loading = ref(true)
 const submitting = ref(false)
 const timeRemaining = ref(0)
 let timer = null
+let idleTimer = null
+let lastActivityTime = Date.now()
+const IDLE_THRESHOLD = 120000
+const pendingEvents = ref([])
+let eventSyncTimer = null
 
 onMounted(async () => {
   try {
@@ -86,6 +91,7 @@ onMounted(async () => {
     questions.value = response.data.questions
     timeRemaining.value = examPaper.value.total_time * 60
     startTimer()
+    startProctoring()
   } catch (e) {
     alert('获取考试信息失败', '考试加载失败', 'error')
     router.push('/exams')
@@ -96,6 +102,7 @@ onMounted(async () => {
 
 onUnmounted(() => {
   if (timer) clearInterval(timer)
+  stopProctoring()
 })
 
 const startTimer = () => {
@@ -136,6 +143,72 @@ const toggleMultipleChoice = (questionId, key) => {
   } else {
     answers.value[questionId].splice(index, 1)
   }
+}
+
+const reportProctorEvent = (eventType, detail = null) => {
+  if (!examRecord.value) return
+  pendingEvents.value.push({
+    event_type: eventType,
+    event_time: new Date().toISOString(),
+    detail
+  })
+}
+
+const syncProctorEvents = async () => {
+  if (pendingEvents.value.length === 0 || !examRecord.value) return
+  const events = [...pendingEvents.value]
+  pendingEvents.value = []
+  try {
+    await api.post('/proctor/events/batch', {
+      exam_record_id: examRecord.value.id,
+      events
+    })
+  } catch (e) {
+    pendingEvents.value = [...events, ...pendingEvents.value]
+  }
+}
+
+const startProctoring = () => {
+  document.addEventListener('visibilitychange', handleVisibilityChange)
+  document.addEventListener('mousemove', handleUserActivity)
+  document.addEventListener('keydown', handleUserActivity)
+  document.addEventListener('click', handleUserActivity)
+  document.addEventListener('scroll', handleUserActivity)
+
+  idleTimer = setInterval(() => {
+    const idleTime = Date.now() - lastActivityTime
+    if (idleTime >= IDLE_THRESHOLD) {
+      reportProctorEvent('idle', `已 ${Math.floor(idleTime / 1000)} 秒未操作`)
+      lastActivityTime = Date.now()
+    }
+  }, 30000)
+
+  eventSyncTimer = setInterval(() => {
+    syncProctorEvents()
+  }, 15000)
+}
+
+const stopProctoring = () => {
+  document.removeEventListener('visibilitychange', handleVisibilityChange)
+  document.removeEventListener('mousemove', handleUserActivity)
+  document.removeEventListener('keydown', handleUserActivity)
+  document.removeEventListener('click', handleUserActivity)
+  document.removeEventListener('scroll', handleUserActivity)
+  if (idleTimer) clearInterval(idleTimer)
+  if (eventSyncTimer) clearInterval(eventSyncTimer)
+  if (pendingEvents.value.length > 0) {
+    syncProctorEvents()
+  }
+}
+
+const handleVisibilityChange = () => {
+  if (document.hidden) {
+    reportProctorEvent('screen_switch', '页面失去焦点/切屏')
+  }
+}
+
+const handleUserActivity = () => {
+  lastActivityTime = Date.now()
 }
 
 const submitExam = async () => {

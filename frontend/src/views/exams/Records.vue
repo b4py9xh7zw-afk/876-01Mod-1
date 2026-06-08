@@ -14,7 +14,9 @@
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">试卷</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">得分</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">状态</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">异常</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">考试时间</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
           </tr>
         </thead>
         <tbody class="bg-white divide-y divide-gray-200">
@@ -26,7 +28,30 @@
                 {{ record.status === 'graded' ? '已评分' : record.status }}
               </span>
             </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <span v-if="record.has_anomaly" class="px-2.5 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full"
+                :class="anomalyBadgeClass(record.anomaly_status)">
+                {{ anomalyLabel(record.anomaly_status) }}
+              </span>
+              <span v-else class="text-xs text-gray-400">正常</span>
+            </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ new Date(record.created_at).toLocaleString() }}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm space-x-3">
+              <router-link
+                v-if="record.has_anomaly"
+                :to="'/proctor/replay/' + record.id"
+                class="text-indigo-600 hover:text-indigo-800 font-medium transition-colors"
+              >
+                监考回放
+              </router-link>
+              <router-link
+                v-if="record.has_anomaly && record.anomaly_status === 'flagged'"
+                :to="'/proctor/replay/' + record.id"
+                class="text-orange-600 hover:text-orange-800 font-medium transition-colors"
+              >
+                申诉
+              </router-link>
+            </td>
           </tr>
         </tbody>
       </table>
@@ -51,4 +76,22 @@ onMounted(async () => {
     loading.value = false
   }
 })
+
+const anomalyBadgeClass = (status) => {
+  const map = {
+    flagged: 'bg-red-100 text-red-700',
+    overridden: 'bg-blue-100 text-blue-700',
+    none: 'bg-green-100 text-green-700'
+  }
+  return map[status] || 'bg-gray-100 text-gray-700'
+}
+
+const anomalyLabel = (status) => {
+  const map = {
+    flagged: '有异常',
+    overridden: '已改判',
+    none: '正常'
+  }
+  return map[status] || status
+}
 </script>

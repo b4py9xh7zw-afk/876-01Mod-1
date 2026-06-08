@@ -25,7 +25,7 @@
         <span class="w-1.5 h-6 bg-indigo-500 rounded-full mr-3 shadow-sm shadow-indigo-300"></span>
         学生功能
       </h2>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
         <router-link to="/exams" class="card-base card-accent-left card-accent-blue p-6 group h-full hover:bg-blue-50/10 dark:hover:bg-blue-900/10">
           <div class="flex items-start h-full">
             <div class="flex-shrink-0 w-14 h-14 bg-blue-100/80 rounded-2xl flex items-center justify-center mr-5 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300 shadow-sm">
@@ -55,10 +55,29 @@
             <div class="flex-1 flex flex-col justify-between">
               <div>
                 <h3 class="text-xl font-bold text-gray-900 mb-2 group-hover:text-emerald-700 transition-colors">我的成绩</h3>
-                <p class="text-gray-500 text-sm leading-relaxed">查看历史考试记录、得分详情及个人能力分析报告。</p>
+                <p class="text-gray-500 text-sm leading-relaxed">查看历史考试记录、得分详情及异常情况。</p>
               </div>
               <div class="mt-4 flex items-center text-sm font-medium text-emerald-600 opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0 transition-all duration-300">
                 查看成绩 <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
+              </div>
+            </div>
+          </div>
+        </router-link>
+
+        <router-link to="/appeals" class="card-base card-accent-left card-accent-orange p-6 group h-full hover:bg-orange-50/10">
+          <div class="flex items-start h-full">
+            <div class="flex-shrink-0 w-14 h-14 bg-amber-100/80 rounded-2xl flex items-center justify-center mr-5 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300 shadow-sm">
+              <svg class="w-7 h-7 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+              </svg>
+            </div>
+            <div class="flex-1 flex flex-col justify-between">
+              <div>
+                <h3 class="text-xl font-bold text-gray-900 mb-2 group-hover:text-amber-700 transition-colors">异常申诉</h3>
+                <p class="text-gray-500 text-sm leading-relaxed">查看考试异常记录，对异常事件提交申诉说明。</p>
+              </div>
+              <div class="mt-4 flex items-center text-sm font-medium text-amber-600 opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0 transition-all duration-300">
+                查看申诉 <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
               </div>
             </div>
           </div>
