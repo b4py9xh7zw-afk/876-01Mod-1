@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\AppealRecord;
 use App\Models\ExamPaper;
 use App\Models\ExamRecord;
 use App\Models\User;
@@ -21,34 +22,48 @@ class ScoreController extends Controller
 
         $totalUsers = User::where('status', 1)->count();
         $totalExams = ExamPaper::where('status', 1)->count();
+        $totalRecords = ExamRecord::where('status', 'graded')->count();
 
-        $validRecords = ExamRecord::where('status', 'graded')
-            ->where(function ($q) {
-                $q->where('has_anomaly', false)
-                    ->orWhere('anomaly_status', ExamRecord::ANOMALY_OVERRIDDEN);
-            });
+        $avgScore = ExamRecord::where('status', 'graded')
+            ->avg('score') ?? 0;
 
-        $totalRecords = $validRecords->count();
-
-        $avgScore = (clone $validRecords)->avg('score') ?? 0;
-
-        $passCount = (clone $validRecords)->where('score', '>=', 60)->count();
-        $totalCount = $validRecords->count();
+        $passCount = ExamRecord::where('status', 'graded')
+            ->where('score', '>=', 60)
+            ->count();
+        $totalCount = ExamRecord::where('status', 'graded')->count();
         $passRate = $totalCount > 0 ? ($passCount / $totalCount) * 100 : 0;
 
         $anomalyCount = ExamRecord::where('status', 'graded')
             ->where('has_anomaly', true)
             ->count();
-
-        $overriddenCount = ExamRecord::where('status', 'graded')
-            ->where('anomaly_status', ExamRecord::ANOMALY_OVERRIDDEN)
-            ->count();
+        $pendingAppeals = AppealRecord::where('status', 'pending')->count();
+        $approvedAppeals = AppealRecord::where('status', 'approved')->count();
+        $rejectedAppeals = AppealRecord::where('status', 'rejected')->count();
 
         $recentRecords = ExamRecord::with(['user', 'examPaper'])
             ->where('status', 'graded')
             ->orderBy('updated_at', 'desc')
             ->limit(10)
-            ->get();
+            ->get()
+            ->map(function ($record) {
+                return [
+                    'id' => $record->id,
+                    'user' => $record->user ? [
+                        'id' => $record->user->id,
+                        'username' => $record->user->username,
+                        'real_name' => $record->user->real_name,
+                    ] : null,
+                    'exam_paper' => $record->examPaper ? [
+                        'id' => $record->examPaper->id,
+                        'title' => $record->examPaper->title,
+                    ] : null,
+                    'score' => $record->score,
+                    'has_anomaly' => $record->has_anomaly,
+                    'anomaly_status' => $record->anomaly_status,
+                    'anomaly_status_label' => ExamRecord::ANOMALY_STATUSES[$record->anomaly_status] ?? $record->anomaly_status,
+                    'submitted_at' => $record->updated_at,
+                ];
+            });
 
         return response()->json([
             'statistics' => [
@@ -58,7 +73,9 @@ class ScoreController extends Controller
                 'avg_score' => round($avgScore, 2),
                 'pass_rate' => round($passRate, 2),
                 'anomaly_count' => $anomalyCount,
-                'overridden_count' => $overriddenCount,
+                'pending_appeals' => $pendingAppeals,
+                'approved_appeals' => $approvedAppeals,
+                'rejected_appeals' => $rejectedAppeals,
             ],
             'recent_records' => $recentRecords,
         ]);
@@ -69,10 +86,6 @@ class ScoreController extends Controller
         $ranking = ExamRecord::with('user')
             ->where('exam_paper_id', $examPaper->id)
             ->where('status', 'graded')
-            ->where(function ($q) {
-                $q->where('has_anomaly', false)
-                    ->orWhere('anomaly_status', ExamRecord::ANOMALY_OVERRIDDEN);
-            })
             ->orderBy('score', 'desc')
             ->limit($request->input('limit', 50))
             ->get()
@@ -106,14 +119,9 @@ class ScoreController extends Controller
             return response()->json(['message' => '无权访问'], 403);
         }
 
-        $validQuery = ExamRecord::where('exam_paper_id', $examPaper->id)
+        $totalAttempts = ExamRecord::where('exam_paper_id', $examPaper->id)
             ->where('status', 'graded')
-            ->where(function ($q) {
-                $q->where('has_anomaly', false)
-                    ->orWhere('anomaly_status', ExamRecord::ANOMALY_OVERRIDDEN);
-            });
-
-        $totalAttempts = (clone $validQuery)->count();
+            ->count();
 
         if ($totalAttempts === 0) {
             return response()->json([
@@ -122,9 +130,17 @@ class ScoreController extends Controller
             ]);
         }
 
-        $avgScore = (clone $validQuery)->avg('score');
-        $highScore = (clone $validQuery)->max('score');
-        $lowScore = (clone $validQuery)->min('score');
+        $avgScore = ExamRecord::where('exam_paper_id', $examPaper->id)
+            ->where('status', 'graded')
+            ->avg('score');
+
+        $highScore = ExamRecord::where('exam_paper_id', $examPaper->id)
+            ->where('status', 'graded')
+            ->max('score');
+
+        $lowScore = ExamRecord::where('exam_paper_id', $examPaper->id)
+            ->where('status', 'graded')
+            ->min('score');
 
         $scoreDistribution = [];
         $ranges = [
@@ -136,7 +152,10 @@ class ScoreController extends Controller
         ];
 
         foreach ($ranges as $range => [$min, $max]) {
-            $count = (clone $validQuery)->whereBetween('score', [$min, $max])->count();
+            $count = ExamRecord::where('exam_paper_id', $examPaper->id)
+                ->where('status', 'graded')
+                ->whereBetween('score', [$min, $max])
+                ->count();
             $scoreDistribution[$range] = $count;
         }
 

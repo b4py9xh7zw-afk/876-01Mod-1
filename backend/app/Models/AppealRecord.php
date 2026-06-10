@@ -24,6 +24,10 @@ class AppealRecord extends Model
     protected $casts = [
         'screenshots' => 'array',
         'reviewed_at' => 'datetime',
+        'exam_record_id' => 'integer',
+        'proctor_event_id' => 'integer',
+        'user_id' => 'integer',
+        'reviewer_id' => 'integer',
     ];
 
     public const STATUS_PENDING = 'pending';
@@ -32,8 +36,8 @@ class AppealRecord extends Model
 
     public const STATUSES = [
         self::STATUS_PENDING => '待审核',
-        self::STATUS_APPROVED => '已通过',
-        self::STATUS_REJECTED => '已驳回',
+        self::STATUS_APPROVED => '申诉通过',
+        self::STATUS_REJECTED => '申诉驳回',
     ];
 
     public function examRecord()

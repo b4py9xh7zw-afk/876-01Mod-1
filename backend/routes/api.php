@@ -1,10 +1,9 @@
 <?php
 
-use App\Http\Controllers\Api\AppealController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\ExamController;
 use App\Http\Controllers\Api\ExamPaperController;
-use App\Http\Controllers\Api\ProctorEventController;
+use App\Http\Controllers\Api\ProctorController;
 use App\Http\Controllers\Api\QuestionController;
 use App\Http\Controllers\Api\ScoreController;
 use Illuminate\Support\Facades\Route;
@@ -50,16 +49,15 @@ Route::middleware(['api', 'auth:sanctum', 'throttle:60,1'])->group(function () {
     });
 
     Route::prefix('proctor')->group(function () {
-        Route::post('/events', [ProctorEventController::class, 'report']);
-        Route::post('/events/batch', [ProctorEventController::class, 'batchReport']);
-        Route::get('/timeline/{record}', [ProctorEventController::class, 'timeline']);
-    });
-
-    Route::prefix('appeals')->group(function () {
-        Route::get('/', [AppealController::class, 'index']);
-        Route::post('/', [AppealController::class, 'store']);
-        Route::get('/{appeal}', [AppealController::class, 'show']);
-        Route::post('/{appeal}/review', [AppealController::class, 'review']);
+        Route::post('/events', [ProctorController::class, 'recordEvent']);
+        Route::get('/events/{record}', [ProctorController::class, 'getProctorEvents']);
+        Route::post('/upload-screenshot', [ProctorController::class, 'uploadScreenshot']);
+        Route::post('/appeals', [ProctorController::class, 'submitAppeal']);
+        Route::get('/appeals/my', [ProctorController::class, 'myAppeals']);
+        Route::get('/appeals/pending', [ProctorController::class, 'pendingAppeals']);
+        Route::get('/appeals/all', [ProctorController::class, 'allAppeals']);
+        Route::get('/appeals/{appeal}', [ProctorController::class, 'getAppealDetail']);
+        Route::post('/appeals/{appeal}/review', [ProctorController::class, 'reviewAppeal']);
     });
 
     Route::prefix('scores')->group(function () {

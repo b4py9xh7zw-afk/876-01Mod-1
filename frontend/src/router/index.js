@@ -39,16 +39,22 @@ const routes = [
     meta: { requiresAuth: true }
   },
   {
-    path: '/proctor/replay/:recordId',
-    name: 'ProctorReplay',
-    component: () => import('../views/proctor/Replay.vue'),
+    path: '/proctor/record/:id',
+    name: 'ProctorPlayback',
+    component: () => import('../views/proctor/Playback.vue'),
     meta: { requiresAuth: true }
   },
   {
-    path: '/appeals',
-    name: 'Appeals',
-    component: () => import('../views/appeals/Index.vue'),
+    path: '/appeals/my',
+    name: 'MyAppeals',
+    component: () => import('../views/proctor/MyAppeals.vue'),
     meta: { requiresAuth: true }
+  },
+  {
+    path: '/appeals/review',
+    name: 'AppealReview',
+    component: () => import('../views/proctor/AppealReview.vue'),
+    meta: { requiresAuth: true, roles: ['admin', 'teacher'] }
   },
   {
     path: '/questions',

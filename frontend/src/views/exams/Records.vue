@@ -1,6 +1,14 @@
 <template>
   <div class="space-y-6">
-    <h1 class="text-2xl font-bold text-gray-900">我的成绩</h1>
+    <div class="flex justify-between items-center">
+      <h1 class="text-2xl font-bold text-gray-900">我的成绩</h1>
+      <router-link to="/appeals/my" class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors">
+        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+        </svg>
+        我的申诉
+      </router-link>
+    </div>
     <div v-if="loading" class="text-center py-8">
       <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>
     </div>
@@ -14,7 +22,7 @@
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">试卷</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">得分</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">状态</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">异常</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">异常标记</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">考试时间</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
           </tr>
@@ -29,27 +37,21 @@
               </span>
             </td>
             <td class="px-6 py-4 whitespace-nowrap">
-              <span v-if="record.has_anomaly" class="px-2.5 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full"
-                :class="anomalyBadgeClass(record.anomaly_status)">
-                {{ anomalyLabel(record.anomaly_status) }}
-              </span>
-              <span v-else class="text-xs text-gray-400">正常</span>
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ new Date(record.created_at).toLocaleString() }}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm space-x-3">
-              <router-link
+              <span
                 v-if="record.has_anomaly"
-                :to="'/proctor/replay/' + record.id"
-                class="text-indigo-600 hover:text-indigo-800 font-medium transition-colors"
+                class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full"
+                :class="getAnomalyClass(record.anomaly_status)"
               >
+                {{ getAnomalyLabel(record.anomaly_status) }}
+              </span>
+              <span v-else class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
+                无异常
+              </span>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ formatDate(record.created_at) }}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+              <router-link :to="`/proctor/record/${record.id}`" class="text-indigo-600 hover:text-indigo-900">
                 监考回放
-              </router-link>
-              <router-link
-                v-if="record.has_anomaly && record.anomaly_status === 'flagged'"
-                :to="'/proctor/replay/' + record.id"
-                class="text-orange-600 hover:text-orange-800 font-medium transition-colors"
-              >
-                申诉
               </router-link>
             </td>
           </tr>
@@ -66,6 +68,35 @@ import api from '../../api'
 const records = ref([])
 const loading = ref(true)
 
+const anomalyLabels = {
+  none: '无异常',
+  flagged: '异常标记',
+  appealed: '已申诉',
+  resolved: '已处理'
+}
+
+const getAnomalyLabel = (status) => anomalyLabels[status] || status
+
+const getAnomalyClass = (status) => {
+  switch (status) {
+    case 'flagged': return 'bg-red-100 text-red-800'
+    case 'appealed': return 'bg-yellow-100 text-yellow-800'
+    case 'resolved': return 'bg-blue-100 text-blue-800'
+    default: return 'bg-gray-100 text-gray-800'
+  }
+}
+
+const formatDate = (dateStr) => {
+  if (!dateStr) return '-'
+  return new Date(dateStr).toLocaleString('zh-CN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+}
+
 onMounted(async () => {
   try {
     const response = await api.get('/exams/records')
@@ -76,22 +107,4 @@ onMounted(async () => {
     loading.value = false
   }
 })
-
-const anomalyBadgeClass = (status) => {
-  const map = {
-    flagged: 'bg-red-100 text-red-700',
-    overridden: 'bg-blue-100 text-blue-700',
-    none: 'bg-green-100 text-green-700'
-  }
-  return map[status] || 'bg-gray-100 text-gray-700'
-}
-
-const anomalyLabel = (status) => {
-  const map = {
-    flagged: '有异常',
-    overridden: '已改判',
-    none: '正常'
-  }
-  return map[status] || status
-}
 </script>

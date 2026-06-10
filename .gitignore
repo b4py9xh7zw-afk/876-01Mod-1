@@ -19,7 +19,12 @@ __pycache__/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+.idea/
+.vscode/
 .DS_Store
 *.log
 .env
 .env.*
+backend/bootstrap/cache/*.php
+backend/storage/*.key
+backend/storage/logs/

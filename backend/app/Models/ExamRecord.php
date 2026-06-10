@@ -42,12 +42,14 @@ class ExamRecord extends Model
 
     public const ANOMALY_NONE = 'none';
     public const ANOMALY_FLAGGED = 'flagged';
-    public const ANOMALY_OVERRIDDEN = 'overridden';
+    public const ANOMALY_APPEALED = 'appealed';
+    public const ANOMALY_RESOLVED = 'resolved';
 
     public const ANOMALY_STATUSES = [
         self::ANOMALY_NONE => '无异常',
-        self::ANOMALY_FLAGGED => '有异常',
-        self::ANOMALY_OVERRIDDEN => '已改判',
+        self::ANOMALY_FLAGGED => '异常标记',
+        self::ANOMALY_APPEALED => '已申诉',
+        self::ANOMALY_RESOLVED => '已处理',
     ];
 
     public function user()
@@ -67,7 +69,7 @@ class ExamRecord extends Model
 
     public function proctorEvents()
     {
-        return $this->hasMany(ProctorEvent::class, 'exam_record_id');
+        return $this->hasMany(ProctorEvent::class, 'exam_record_id')->orderBy('event_time', 'asc');
     }
 
     public function appeals()

@@ -23,13 +23,13 @@ class ProctorEvent extends Model
     public const TYPE_SCREEN_SWITCH = 'screen_switch';
     public const TYPE_CAMERA_DISCONNECT = 'camera_disconnect';
     public const TYPE_IDLE = 'idle';
-    public const TYPE_NETWORK_RECOVERY = 'network_recovery';
+    public const TYPE_NETWORK_RECOVER = 'network_recover';
 
     public const TYPES = [
         self::TYPE_SCREEN_SWITCH => '切屏',
         self::TYPE_CAMERA_DISCONNECT => '摄像头断开',
         self::TYPE_IDLE => '长时间未操作',
-        self::TYPE_NETWORK_RECOVERY => '网络恢复',
+        self::TYPE_NETWORK_RECOVER => '网络恢复',
     ];
 
     public function examRecord()
